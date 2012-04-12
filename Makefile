@@ -1,9 +1,9 @@
 compile:
-	@ elixirc "lib/**/*.ex" -o exbin/ --docs
+	@ elixirc "lib/**/*.ex" -o ebin/ --docs
 
 clean:
-	@ rm -rf exbin
+	@ rm -rf ebin
 
 test: compile
-	@ time elixir -pa exbin/ -r "test/**/*_test.exs"
+	@ time elixir -pa ebin/ -r "test/**/*_test.exs"
 
