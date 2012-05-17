@@ -4,7 +4,7 @@ defmodule Mix.Utils do
   """
   def capitalize(s) when is_list(s), do: capitalize list_to_binary(s)
   def capitalize(<<s>>), do: <<:string.to_upper(s)>>
-  def capitalize(<<s, t|binary>>) do
+  def capitalize(<<s, t|:binary>>) do
     <<:string.to_upper(s)>> <> t
   end
 
