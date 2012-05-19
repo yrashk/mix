@@ -53,7 +53,7 @@ defmodule Mix.Tasks.Compile do
     Code.compiler_options(project[:compile_options])
     :file.make_dir compile_path
     to_compile = extract_files(project[:source_paths])
-    if force == "--force" || Enum.find(to_compile, stale?(&1, compile_path)) do
+    if force == "--force" || Enum.find(to_compile, stale?(&1, compile_path <> "/__MAIN__")) do
       if !Enum.empty?(compile_first) do
         IO.puts "\nPerforming initial compilation (compile_first)...\n"
         Enum.each(compile_first, compile_file(&1, compile_path))
@@ -61,11 +61,7 @@ defmodule Mix.Tasks.Compile do
       end
       Enum.each(project[:source_paths], fn(path) ->
         files = File.wildcard(File.join([path, "**/*.ex"]))
-        Enum.each(files, fn(file) ->
-          if !Enum.find(project[:compile_first], fn(x) -> x == file end) do
-            compile_file(file, compile_path)
-          end
-        end)
+	compile_files(files, compile_path)
       end)
     end
     Mix.Utils.touch(compile_path)
@@ -74,15 +70,22 @@ defmodule Mix.Tasks.Compile do
   defp extract_files(paths) do
     List.concat(lc path in paths, do: File.wildcard(File.join([path, "**/*.ex"])))
   end
-
-  defp compile_file(file, to) do
-    IO.puts Enum.join(["Compiling ", file, " to ", to, "..."])
-    Code.compile_file_to_dir(file, to)
+  defp compile_files(files, to) do
+    Elixir.ParallelCompiler.files_to_path(files, to, fn(x) ->
+      IO.puts Enum.join(["Compiling ", x, " to ", to, "..."])
+      x 
+    end)
   end
-
+  defp compile_file(file, to) do
+    compile_files([file], to)
+  end
   defp stale?(file, to) do
     {:ok, file_info} = File.read_info(file)
-    {:ok, to_info} = File.read_info(to)
-    file_info.mtime > to_info.mtime
+    case File.read_info(to) do
+    match: {:ok, to_info}
+      file_info.mtime > to_info.mtime
+    match: {:error, _}
+      true
+    end
   end
 end
