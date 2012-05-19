@@ -82,9 +82,9 @@ defmodule Mix.Tasks.Compile do
   defp stale?(file, to) do
     {:ok, file_info} = File.read_info(file)
     case File.read_info(to) do
-    match: {:ok, to_info}
+    {:ok, to_info} ->
       file_info.mtime > to_info.mtime
-    match: {:error, _}
+    {:error, _} ->
       true
     end
   end

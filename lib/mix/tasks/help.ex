@@ -20,7 +20,7 @@ defmodule Mix.Tasks.Help do
       task = Mix.Tasks.module_to_task(module)
       if doc do
         IO.puts(task <> ": " <> doc)
-      else:
+      else
         IO.puts(task <> ": " <> "run `mix help " <>
                 task <> "` to see documentation.")
       end
@@ -29,15 +29,15 @@ defmodule Mix.Tasks.Help do
 
   def run([task]) do
     case Mix.Tasks.get_module(task) do
-    match: {:module, module}
+    {:module, module} ->
       docs = module.__info__(:moduledoc)
       case docs do
-      match: {_, docs}
+      {_, docs} ->
         IO.puts docs
-      else:
+      else
         IO.puts "There is no documentation for this task."
       end
-    match: {:error, _}
+    {:error, _} ->
       IO.puts "No task by that name was found."
     end
   end

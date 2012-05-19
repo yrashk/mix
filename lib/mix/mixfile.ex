@@ -11,9 +11,9 @@ defmodule Mix.Mixfile do
       Code.require_file("mix")
     end
     case get_project do
-    match: nil
+    nil ->
       nil
-    match: project
+    project ->
       add_local_code project
     end
   end
@@ -23,15 +23,15 @@ defmodule Mix.Mixfile do
   """
   def get_project() do
     case :code.ensure_loaded(Mix.Project) do
-    match: {:module, _}
+    {:module, _} ->
       Keyword.merge(project_defaults, Mix.Project.project, fn(_, x, y) ->
         if is_list(x) && is_list(y) do
           x ++ y
-        else:
+        else
           y
         end
       end)
-    else:
+    else
       nil
     end
   end
@@ -45,7 +45,7 @@ defmodule Mix.Mixfile do
   def default_task(project) do
     if project && project[:default] do
       project[:default]
-    else:
+    else
       "help"
     end
   end
