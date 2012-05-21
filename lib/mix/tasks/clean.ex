@@ -20,7 +20,7 @@ defmodule Mix.Tasks.Clean do
     Enum.each(List.reverse(File.wildcard(File.join([dir, "**"]))), fn(file) ->
       if :filelib.is_dir(file) do
         :file.del_dir file
-      else:
+      else
         :file.delete file
       end
     end)

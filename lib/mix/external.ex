@@ -34,15 +34,14 @@ defmodule Mix.External do
     Process.spawn(fn() ->
       port = cmd(name, args)
       loop do
-      match:
         receive do
-        match: {pid, :take}
+        {pid, :take} ->
           pid <- {Process.self, receive_data(port)}
           recur
-      match: {:put, data}
+        {:put, data} ->
           :erlang.port_command port, data
           recur
-        match: {pid, :stream_to_out}
+        {pid, :stream_to_out} ->
           pid <- {Process.self, internal_stream_to_out(port)}
         end
       end
@@ -51,9 +50,9 @@ defmodule Mix.External do
 
   defp internal_stream_to_out(port) do
     case receive_data(port) do
-    match: :eof
+    :eof ->
       :eof
-    match: data
+    data ->
       IO.print data
       internal_stream_to_out(port)
     end
@@ -61,9 +60,9 @@ defmodule Mix.External do
 
   defp receive_data(port) do
     receive do
-    match: {^port, {:data, data}}
+    {^port, {:data, data}} ->
       data
-    match: {^port, :eof}
+    {^port, :eof} ->
       :eof
     end
   end
@@ -81,7 +80,7 @@ defmodule Mix.External do
     lc item in l do
       if is_binary(item) do
         binary_to_list item
-      else:
+      else
         item
       end
     end
@@ -95,7 +94,7 @@ defmodule Mix.External do
   def stream_to_out(proc) do
     proc <- {Process.self, :stream_to_out}
     receive do
-    match: {^proc, :eof}
+    {^proc, :eof} ->
       :ok
     end
   end
@@ -112,9 +111,9 @@ defmodule Mix.External do
   defp do_take_all(proc, acc // []) do
     proc <- {Process.self, :take}
     receive do
-    match: {^proc, :eof}
+    {^proc, :eof} ->
       Enum.join acc
-    match: {^proc, data}
+    {^proc, data} ->
       do_take_all proc, [data|acc]
     end
   end
