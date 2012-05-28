@@ -8,8 +8,9 @@ defmodule Mix.Tasks.Test do
   :test_pattern is "*_test.exs" by default and
   :test_paths is ["test/"].
   """
+
+  requires [:compile]
   def run(_) do
-    Mix.Tasks.run_task "compile"
     project = Mix.Mixfile.get_project
     ExUnit.start []
     Enum.each(project[:test_paths], fn(path) ->
