@@ -75,7 +75,24 @@ defmodule Mix.Tasks do
   end
 
   refer :digraph, as: G
+
   refer :digraph_utils, as: GU
+
+
+  # In order to resolve and run necessary dependencies, the following
+  # algorithm builds a digraph where every vertex is either a task reference
+  # or a target. It then maps values that are not tasks to tasks (using
+  # Task.__provides__). In order to satisfy deoendencies in the right 
+  # order, it selects all vertices with no emanating edges (which means
+  # that those vertices do not have dependencies). Their respective
+  # tasks are run (unless if the vertice is in fact describing a file)
+  # and unlinked from all edges it is incident on, so that they don't
+  # get included into further processing. Before proceeding further,
+  # those vertices are linked to the :satisfaction vertex to log
+  # their completion. This digraph gets processed until there are no
+  # vertices with no emanating edges, which means there are no
+  # unsatisfied dependencies anymore.
+
   defp run_dependencies(task, args) do
        g = G.new
        targets = resolve_dependencies(g, task)
@@ -83,6 +100,7 @@ defmodule Mix.Tasks do
        run_resolved_tasks(g, targets, args)
        G.delete g
   end
+
   defp run_resolved_tasks(g, targets, args) do
        report = 
        lc task in G.vertices(g) when
@@ -116,6 +134,7 @@ defmodule Mix.Tasks do
             _ -> run_resolved_tasks(g, targets, args)
        end
   end
+
   defp resolve_dependencies(g, task) do
        {:module, module} = Mix.Tasks.get_module(task)
        G.add_vertex(g, task)

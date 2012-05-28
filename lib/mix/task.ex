@@ -17,9 +17,43 @@ defmodule Mix.Task do
      end
   end
 
+
+  @doc """
+
+     Describes what are the targets provided by the task. Used
+     to satisfy requirements of other tasks.
+
+     The value provided or returned should be a list.
+
+     Every task gets implicit targets of 1) their module,
+     2) their name as a string 3) their name as an atom
+
+     Examples:
+  
+     provides [:atom, "string", AnythingElse]
+
+     provides do: [filename]
+
+  """
   defmacro provides(options) do
       property(:__provides__, options)
   end
+
+  @doc """
+
+     Describes what are the targets required by the task. Satisfied
+     by tasks that provide these targets. String targets are also
+     tried as file dependencies, unless provided by other tasks.
+
+     The value provided or returned should be a list.     
+     
+     Examples:
+  
+     requires [:atom, "string", AnythingElse]
+
+     requires do: [filename]
+
+  """
 
   defmacro requires(options) do
       property(:__requires__, options)
