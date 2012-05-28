@@ -37,6 +37,7 @@ defmodule Mix.Tasks do
   task module is successfully loaded, a tuple of
   {:module, module} is returned.
   """
+  def get_module(s) when is_atom(s), do: get_module atom_to_binary(s)
   def get_module(s) when is_list(s), do: get_module list_to_binary(s)
   def get_module(s) do
     name = Module.concat(Mix.Tasks, capitalize_task(s))
@@ -51,7 +52,7 @@ defmodule Mix.Tasks do
     case Mix.Tasks.get_module(name) do
     {:module, module} ->
       if is_task?(module) do
-        module.run(args)
+        run_dependencies(name, args)
       else
         IO.puts "That task could not be found."
       end
@@ -59,6 +60,63 @@ defmodule Mix.Tasks do
       IO.puts "That task could not be found."
     end
   end
+
+  refer :digraph, as: G
+  refer :digraph_utils, as: GU
+  defp run_dependencies(task, args) do
+       g = G.new
+       targets = resolve_dependencies(g, task)
+       G.add_vertex(g, :satisfaction)
+       run_resolved_tasks(g, targets, args)
+       G.delete g
+  end
+  defp run_resolved_tasks(g, targets, args) do
+       report = 
+       lc task in G.vertices(g) when
+          G.out_edges(g, task) == [] and
+          task !== :satisfaction do
+              module = Dict.get(targets, task)
+              module.run(args) 
+              lc edge in G.in_edges(g, task), do: G.del_edge(g, edge)
+              G.add_edge(g, task, :satisfaction)
+       end
+       case report do
+            [] -> :ok
+            _ -> run_resolved_tasks(g, targets, args)
+       end
+  end
+  defp resolve_dependencies(g, task) do
+       {:module, module} = Mix.Tasks.get_module(task)
+       G.add_vertex(g, task)
+       reqs = module.__requires__ 
+       lc req in reqs do
+           G.add_vertex(g, req)
+           G.add_edge(g, task, req)
+       end
+       lc req_task in (lc e in G.edges(g, task), do: ({_, _, t, _} = G.edge(g, e); t)) when requirement_is_task?(req_task) and req_task !== task  do
+           resolve_dependencies(g, req_task)
+           case GU.is_tree(g) do
+               true -> :ok
+               false ->
+                   throw("After adding #{req_task}, dependency graph is no longer a tree")
+           end
+       end
+       tasks = list_tasks
+       HashDict.new(
+       lc task in tasks, target in task.__provides__ do
+           {target, task}
+       end)
+  end
+
+  defp requirement_is_task?(name) do
+     case Mix.Tasks.get_module(name) do
+         {:module, module} ->
+             is_task?(module)
+         _ ->
+             false
+     end
+  end
+
 
   @doc """
   Takes a module and extracts the last portion of it,
@@ -82,10 +140,10 @@ defmodule Mix.Tasks do
   it is a task as opposed to a module holding
   other namespaced tasks.
   """
-  def is_task?(module) do
+  def is_task?(module) when is_atom(module) do
     Enum.find(module.module_info(:functions), fn({name, arity}) ->
       name == :run && arity == 1
-    end)
+    end) !== false
   end
 
   defp to_lower(task) do
