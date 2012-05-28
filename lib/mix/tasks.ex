@@ -1,3 +1,11 @@
+defexception Mix.TaskError, [context: :mix, report: "Unknown error"] do
+   def message(exception) do
+        "Error in #{exception.context}: #{exception.report}"
+   end
+   
+   def throw!(exception), do: throw(exception)
+end
+
 defmodule Mix.Tasks do
   @moduledoc """
   Utilities for finding tasks and returning them as modules.
@@ -52,7 +60,12 @@ defmodule Mix.Tasks do
     case Mix.Tasks.get_module(name) do
     {:module, module} ->
       if is_task?(module) do
-        run_dependencies(name, args)
+        try do
+          run_dependencies(name, args)
+        catch
+          _, Mix.TaskError[] = report ->
+             IO.puts report.message
+        end
       else
         IO.puts "That task could not be found."
       end
@@ -85,10 +98,15 @@ defmodule Mix.Tasks do
                               lc edge in G.in_edges(g, task), do: G.del_edge(g, edge)
                                G.add_edge(g, task, :satisfaction)
                           false ->
-                              throw("Can't satisfy a requirement for #{task}")
+                              Mix.TaskError.new(report:"Can't satisfy a requirement for #{task}").throw!
                       end
                   _ ->
-                      module.run(args) 
+                      try do
+                          module.run(args) 
+                      catch
+                          _, Mix.TaskError[] = error ->
+                              error.context("'#{task}' task").throw!()
+                      end
                       lc edge in G.in_edges(g, task), do: G.del_edge(g, edge)
                       G.add_edge(g, task, :satisfaction)
               end
@@ -111,7 +129,7 @@ defmodule Mix.Tasks do
            case GU.is_tree(g) do
                true -> :ok
                false ->
-                   throw("After adding #{req_task}, dependency graph is no longer a tree")
+                   Mix.TaskError.new(report: "After adding #{req_task}, dependency graph is no longer a tree").throw!
            end
        end
        tasks = list_tasks
