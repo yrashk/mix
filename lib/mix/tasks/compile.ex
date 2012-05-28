@@ -45,6 +45,11 @@ defmodule Mix.Tasks.Compile do
     none: Compile all source files if they have changed since the last
           compilation.
   """
+  requires do
+    project = Mix.Mixfile.get_project
+    extract_files(project[:source_paths])
+  end
+
   def run(args) do
     destructure([force], args)
     project = Mix.Mixfile.get_project
