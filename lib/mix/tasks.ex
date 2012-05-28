@@ -76,9 +76,22 @@ defmodule Mix.Tasks do
           G.out_edges(g, task) == [] and
           task !== :satisfaction do
               module = Dict.get(targets, task)
-              module.run(args) 
-              lc edge in G.in_edges(g, task), do: G.del_edge(g, edge)
-              G.add_edge(g, task, :satisfaction)
+              case module do
+                  nil ->
+                      # no mapping
+                      # may be it is a file?
+                      case File.exists?(task) do
+                          true ->
+                              lc edge in G.in_edges(g, task), do: G.del_edge(g, edge)
+                               G.add_edge(g, task, :satisfaction)
+                          false ->
+                              throw("Can't satisfy a requirement for #{task}")
+                      end
+                  _ ->
+                      module.run(args) 
+                      lc edge in G.in_edges(g, task), do: G.del_edge(g, edge)
+                      G.add_edge(g, task, :satisfaction)
+              end
        end
        case report do
             [] -> :ok
