@@ -7,8 +7,8 @@ defmodule Mix.Tasks.Iex do
   will add your `compile_path` and `erlang_compile_path`.
   Will compile first.
   """
+  requires [:compile]
   def run(_) do
-    Mix.Tasks.run_task "compile"
     Elixir.IEx.start
     :timer.sleep(:infinity)
   end
